@@ -28,8 +28,8 @@ CFLAGS+= -I/opt/nvidia/deepstream/deepstream/sources/includes
 LIBS:= -lnvinfer -lnvparsers
 LFLAGS:= -Wl,--start-group $(LIBS) -Wl,--end-group
 
-SRCFILES:= nvinfer_custom_lpr_parser_tong.cpp
-TARGET_LIB:= libnvdsinfer_custom_impl_lpr_tong.so
+SRCFILES:= nvinfer_custom_lpr_parser.cpp
+TARGET_LIB:= libnvdsinfer_custom_impl_lpr.so
 
 all: $(TARGET_LIB)
 
