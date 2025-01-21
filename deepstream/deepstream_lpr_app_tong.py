@@ -130,11 +130,12 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
                 print("rect_params_height: " + str(rect_params_info.height))
                 # get rect_params_info rectangle points
                 rect = [
-                    [rect_params_info.left, rect_params_info.top], 
-                    [rect_params_info.left + rect_params_info.width, rect_params_info.top],
-                    [rect_params_info.left + rect_params_info.width, rect_params_info.top + rect_params_info.height],
-                    [rect_params_info.left, rect_params_info.top + rect_params_info.height]
-
+                    # left bottom
+                    rect_params_info.left,
+                    rect_params_info.top + rect_params_info.height,
+                    # right top
+                    rect_params_info.left + rect_params_info.width, 
+                    rect_params_info.top
                 ]
                 car["car_id"]=parent_tracking_id
                 car["bbox"]=rect
