@@ -126,7 +126,7 @@ class ParkingDetector:
         if car["rec_score"] < self.score_threshold:
             return
         # 对于小于150*150的车，跳过
-        if car_bbox[2] - car_bbox[0] < 150 or car_bbox[3] - car_bbox[1] < 150:
+        if car_bbox[2] - car_bbox[0] < 150 or car_bbox[1] - car_bbox[3] < 150:
             return
         self.check_parking_intention(frame, source_id,car)
 
@@ -219,22 +219,22 @@ def test2():
     width = 90.72988891601562
     height = 33.31583023071289
     rect = [
-                    # left bottom
-                    left,
-                    top + height,
-                    # right top
-                    left +width, 
-                    top
-                ]
-    pd.process_frame("/live/v01", 10, {
-        "car_id": "car_1",
-        "class": "sedan",
-        "plate_num": "津NLU035",
-        "rec_score": 0.9,
-        "bbox": rect,
-        # "bbox": [100, 100, 300, 300],
-        "det_score": 0.95
-    })
+            # left bottom
+            left,
+            top + height,
+            # right top
+            left +width, 
+            top
+    ]
+    car = {}
+    car["car_id"]="car_1"
+    car["class"]="sedan"
+    car["plate_num"]= "津NLU035"
+    car["rec_score"]= 0.9
+    car["bbox"]= rect
+    car["det_score"]= 0.95
+    
+    pd.process_frame("/live/v01", 10, car)
 
 if __name__ == "__main__":
     # video_path = "path/to/input/video.mp4"
