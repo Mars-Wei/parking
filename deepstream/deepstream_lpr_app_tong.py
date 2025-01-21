@@ -23,7 +23,10 @@
 ################################################################################
 
 import sys
+
+from deepstream.parking_detector import ParkingDetector
 sys.path.append('../')
+from deepstream.parking_config import load_parking_config
 import gi
 import configparser
 gi.require_version('Gst', '1.0')
@@ -61,6 +64,7 @@ GST_CAPS_FEATURES_NVMM="memory:NVMM"
 OSD_PROCESS_MODE= 0
 OSD_DISPLAY_TEXT= 0
 pgie_classes_str= ["lpd"]
+pd = ParkingDetector(load_parking_config())
 
 # tiler_sink_pad_buffer_probe  will extract metadata received on OSD sink pad
 # and update params for drawing rectangle, object information etc.
@@ -109,6 +113,7 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
                 # print(obj_meta)
             except StopIteration:
                 break
+            car = {}
             print(obj_meta.unique_component_id)
             if(obj_meta.unique_component_id == 2):
                 print("secondary_detector is working")
@@ -123,6 +128,19 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
                 print("rect_params_top: " + str(rect_params_info.top))
                 print("rect_params_width: " + str(rect_params_info.width))
                 print("rect_params_height: " + str(rect_params_info.height))
+                # get rect_params_info rectangle points
+                rect = [
+                    # left bottom
+                    rect_params_info.left,
+                    rect_params_info.top + rect_params_info.height,
+                    # right top
+                    rect_params_info.left + rect_params_info.width, 
+                    rect_params_info.top
+                ]
+                car["car_id"]=parent_tracking_id
+                car["bbox"]=rect
+                car["rec_score"]=rect_params_info.confidence
+                car["class"]=rect_params_info.class_id
                 # license_plate_coordinate.append([frame_count[0], parent_tracking_id, rect_params_info.left, rect_params_info.top, rect_params_info.width, rect_params_info.height])
 
             obj_meta.rect_params.border_color.set(0.0, 0.0, 1.0, 0.8) #0.8 is alpha (opacity)
@@ -148,7 +166,8 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
                         except StopIteration:
                             break
                         print('result label:' + label_info.result_label)
-                    
+                        car["plate_num"]=label_info.result_label
+                        car["det_score"]=""
                         try:
                             l_label=l_label.next
                         except StopIteration:
@@ -190,6 +209,7 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
                                             break
 
                                         print(label_info.result_label)
+                                        
 
                                         try:
                                             l_label=l_label.next
@@ -231,6 +251,7 @@ def tiler_src_pad_buffer_probe(pad,info,u_data,args):
             except StopIteration:
                 break
 
+        pd.process_frame(frame_meta.source_id,frame_number,car)
         # Acquiring a display meta object. The memory ownership remains in
         # the C code so downstream plugins can still access it. Otherwise
         # the garbage collector will claim it when this probe function exits.
