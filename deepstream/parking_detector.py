@@ -4,8 +4,8 @@ import time
 import cv2
 
 class ParkingDetector:
-    def __init__(self, parking_info, json_path="/tmp/parking_demo.log", score_threshold=0.8):
-        self.parking_info = parking_info
+    def __init__(self, parking_config, json_path="/tmp/parking_demo.log", score_threshold=0.8):
+        self.parking_config = parking_config
         self.data = {}
         self.json_path = json_path
         self.score_threshold = score_threshold
@@ -101,24 +101,24 @@ class ParkingDetector:
         self.log_event(event)
         self.trigger_external_event(event)
 
-    def process_frame(self, frame, cars):
+    def process_frame(self, source_id,frame, car):
         """
         处理单帧视频，进行车辆检测和车牌识别。
         :param frame: 当前帧号
-        :param cars: 检测到的车辆信息
+        :param car: 检测到的车辆信息
         """
-        for car_id in cars.keys():
-            car = cars[car_id]
-            car_bbox = car["bbox"]
-            # 小于检测准确度阈值，跳过
-            if car["rec_score"] < self.score_threshold:
-                continue
-            # 对于小于150*150的车，跳过
-            if car_bbox[2] - car_bbox[0] < 150 or car_bbox[3] - car_bbox[1] < 150:
-                continue
-            self.check_parking_intention(frame, car)
+        # for car_id in cars.keys():
+        # car = cars[car_id]
+        car_bbox = car["bbox"]
+        # 小于检测准确度阈值，跳过
+        if car["rec_score"] < self.score_threshold:
+            return
+        # 对于小于150*150的车，跳过
+        if car_bbox[2] - car_bbox[0] < 150 or car_bbox[3] - car_bbox[1] < 150:
+            return
+        self.check_parking_intention(frame, source_id,car)
 
-    def check_parking_intention(self, frame, car):
+    def check_parking_intention(self, source_id,frame, car):
         """
         车辆停车意图检测，同时记录车辆进出停车位的事件。
         :param frame: 当前帧号
@@ -130,8 +130,8 @@ class ParkingDetector:
 
         car_bbox = car["bbox"]
         car_data = self.data[car_id]
-        for parking_id in self.parking_info:
-            parking_boxes = self.parking_info[parking_id]
+        parking_info = self.parking_config['streams'][source_id]
+        for parking_id, parking_boxes in enumerate(zip(parking_info['parking_ids'],parking_info['parking_rects'])):
             dis = self.calculate_center_distance(parking_boxes, car_bbox)
             threshold = self.calculate_rectangle_diameter(car_bbox) / 3
 
