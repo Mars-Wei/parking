@@ -2,6 +2,7 @@ import json
 import math
 import time
 import cv2
+import requests
 
 class ParkingDetector:
     def __init__(self, parking_config, json_path="/tmp/parking_demo.log", score_threshold=0.8):
@@ -77,8 +78,8 @@ class ParkingDetector:
         with open(self.json_path, "a", encoding="utf-8") as f_out:
             f_out.write(json.dumps(event, ensure_ascii=False) + "\n")
 
-    @staticmethod
-    def trigger_external_event(event):
+
+    def trigger_external_event(self,event):
         """
         调用外部接口触发事件。
 
@@ -86,6 +87,17 @@ class ParkingDetector:
         """
         # 这里可以添加调用外部接口的逻辑
         print(f"Triggering external event: {event}")
+        url = self.parking_config["network"]["event_url"]
+        if url:
+            try:
+                headers = {'Content-type': 'application/json'}
+                response = requests.post(url, json=event, headers=headers)
+                response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+                print(f"Event pushed successfully to {url}: {response.text}")
+            except requests.exceptions.RequestException as e:
+                    print(f"Failed to push event to {url}: {e}")
+        else:
+            print("No push_url configured. Event not pushed.")
 
     def handle_parking_event(self, car_data, parking_id, frame_num, event_type, event_time):
         """
@@ -118,7 +130,7 @@ class ParkingDetector:
             return
         self.check_parking_intention(frame, source_id,car)
 
-    def check_parking_intention(self, source_id,frame, car):
+    def check_parking_intention(self, frame, source_id, car):
         """
         车辆停车意图检测，同时记录车辆进出停车位的事件。
         :param frame: 当前帧号
@@ -131,7 +143,7 @@ class ParkingDetector:
         car_bbox = car["bbox"]
         car_data = self.data[car_id]
         parking_info = self.parking_config['streams'][source_id]
-        for parking_id, parking_boxes in enumerate(zip(parking_info['parking_ids'],parking_info['parking_rects'])):
+        for parking_id, parking_boxes in zip(parking_info['parking_ids'],parking_info['parking_rects']):
             dis = self.calculate_center_distance(parking_boxes, car_bbox)
             threshold = self.calculate_rectangle_diameter(car_bbox) / 3
 
@@ -199,11 +211,37 @@ def test(video_path, parking, output_video_path):
         cap.release()
         cv2.destroyAllWindows()
 
+from parking_config import load_parking_config
+def test2():
+    pd = ParkingDetector(load_parking_config())
+    left = 1899.132568359375
+    top = 1033.59619140625
+    width = 90.72988891601562
+    height = 33.31583023071289
+    rect = [
+                    # left bottom
+                    left,
+                    top + height,
+                    # right top
+                    left +width, 
+                    top
+                ]
+    pd.process_frame("/live/v01", 10, {
+        "car_id": "car_1",
+        "class": "sedan",
+        "plate_num": "津NLU035",
+        "rec_score": 0.9,
+        "bbox": rect,
+        # "bbox": [100, 100, 300, 300],
+        "det_score": 0.95
+    })
+
 if __name__ == "__main__":
-    video_path = "path/to/input/video.mp4"
-    parking = {
-        "parking1": [[150, 150, 250, 250]],
-        "parking2": [[350, 350, 450, 450]]
-    }
-    output_video_path = "path/to/output/video.mp4"
-    test(video_path, parking, output_video_path)
+    # video_path = "path/to/input/video.mp4"
+    # parking = {
+    #     "parking1": [[150, 150, 250, 250]],
+    #     "parking2": [[350, 350, 450, 450]]
+    # }
+    # output_video_path = "path/to/output/video.mp4"
+    # test(video_path, parking, output_video_path)
+    test2()
