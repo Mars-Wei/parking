@@ -1,11 +1,8 @@
 import json
 
-def load_parking_config(config_file):
+def load_parking_config(config_file = "parking_config.json"):
     """
     加载停车配置 JSON 文件.
-
-    Args:
-        config_file (str): JSON 配置文件路径.
 
     Returns:
         dict: 配置字典, 如果加载失败返回 None.
@@ -37,13 +34,11 @@ def process_parking_config(config):
     print("\nStream Configurations:")
     for stream_id, stream_data in config['streams'].items():
         print(f"\n  Stream ID: {stream_id}")
-        print(f"    Parking Nos: {stream_data['parking_no']}")
+        print(f"    Parking Nos: {stream_data['parking_ids']}")
         print("    Parking Rectangles:")
-        for i, rect in enumerate(stream_data['parking_recs']):
+        for i, rect in enumerate(stream_data['parking_rects']):
             print(f"      Rectangle {i + 1}: {rect}")
 
 
 if __name__ == '__main__':
-    config_file = "/Users/yanyu/work/ai_box_stuff/parking/deepstream/parking_config.json"  # 你的实际文件路径
-    parking_config = load_parking_config(config_file)
-    process_parking_config(parking_config)
+    process_parking_config(load_parking_config())
